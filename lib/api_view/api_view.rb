@@ -15,7 +15,7 @@ module ApiView
     end
 
     def converter_for(clazz, options=nil)
-      if options && options[:use] && options[:use].kind_of?(Class) then
+      if options && options[:use].kind_of?(Class) then
         return options[:use]
       end
       models[clazz.to_s] || ApiView::Default
