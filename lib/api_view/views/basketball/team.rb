@@ -4,10 +4,10 @@ require "api_view/views/team"
 class BasketballTeamApiView < TeamApiView
 
   def self.convert(team)
-    super.merge(
-      medium_name: team.medium_name,
-      short_name: team.short_name
-    )
+    hash = super
+    hash[:medium_name] = team.medium_name
+    hash[:short_name]  = team.short_name
+    hash
   end
 
 end
