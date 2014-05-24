@@ -48,7 +48,12 @@ module ApiView
           return ret
 
         elsif obj.respond_to?(:map) then
-          return obj.map { |o| convert(o, options) }
+          if options.blank? or !options[:cache_array] then
+            converter = ApiView.converter_for(obj.first.class, options)
+            return obj.map { |o| converter.convert(o) }
+          else
+            return obj.map { |o| convert(o, options) }
+          end
 
         else
           return ApiView.converter_for(obj.class, options).convert(obj)
