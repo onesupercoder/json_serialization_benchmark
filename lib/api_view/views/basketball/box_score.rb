@@ -8,9 +8,9 @@ class BasketballBoxScoreApiView < BoxScoreApiView
   alias_method :box_score, :object
 
   def convert
-    hash = super
-    hash[:last_play] = BasketballPlayByPlayRecordApiView.new(box_score.last_play).convert
-    hash
+    super
+    store :last_play, BasketballPlayByPlayRecordApiView.new(box_score.last_play).convert
+    self
   end
 
 end

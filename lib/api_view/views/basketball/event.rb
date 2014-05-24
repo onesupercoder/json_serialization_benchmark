@@ -7,15 +7,15 @@ class BasketballEventApiView < EventApiView
   alias_method :event, :object
 
   def convert
-    hash = super
+    super
     if event.ncaa? then
-      hash[:away_ranking] = event.away_ranking
-      hash[:away_region]  = event.away_region
-      hash[:home_ranking] = event.home_ranking
-      hash[:home_region]  = event.home_region
+      store :away_ranking, event.away_ranking
+      store :away_region,  event.away_region
+      store :home_ranking, event.home_ranking
+      store :home_region,  event.home_region
     end
 
-    hash
+    self
   end
 
 end

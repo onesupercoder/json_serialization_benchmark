@@ -1,7 +1,7 @@
 
 module ApiView
 
-  class Base
+  class Base < ::Hash
 
     class << self
 
@@ -17,17 +17,17 @@ module ApiView
         # create a method which reads each attribute from the model object and
         # copies it into the hash, then returns the hash itself
         # e.g.,
-        # def collect
+        # def collect_attributes
         #   super
-        #   @hash[:foo] = @object.send(:foo)
+        #   self[:foo] = @object.send(:foo)
         #   ...
-        #   @hash
+        #   self
         # end
-        code = ["def collect()", "super"]
+        code = ["def collect_attributes()", "super"]
         @attributes.each do |a|
-          code << "@hash[:#{a}] = @object.send(:#{a})"
+          code << "self.store :#{a}, @object.send(:#{a})"
         end
-        code << "@hash"
+        # code << "self"
         code << "end"
         class_eval(code.join("\n"))
 
@@ -36,20 +36,20 @@ module ApiView
 
     end
 
-    attr_reader :object, :hash
+    attr_reader :object
     alias_method :obj, :object
 
     def initialize(object)
+      super(nil)
       @object = object
-      @hash = {}
     end
 
-    def collect
-      @hash # no-op by default
+    def collect_attributes
+      # self # no-op by default
     end
 
     def convert
-      collect()
+      collect_attributes()
     end
 
     def render(obj, options)

@@ -8,9 +8,9 @@ class EventApiView < EventSummaryApiView
   alias_method :event, :object
 
   def convert
-    hash = super
-    hash[:box_score] = BasketballBoxScoreApiView.new(event.box_score).convert
-    hash
+    super
+    store :box_score, BasketballBoxScoreApiView.new(event.box_score).convert
+    self
   end
 
 end
