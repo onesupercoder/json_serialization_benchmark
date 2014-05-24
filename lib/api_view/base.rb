@@ -17,7 +17,8 @@ module ApiView
 
         ret = {}
         attrs.each do |a|
-          ret[a.to_sym] = obj.send(a.to_sym)
+          k = a.to_sym
+          ret[k] = obj.send(k)
         end
         return ret
       end
