@@ -16,11 +16,11 @@ module ApiView
 
         # create a method which reads each attribute from the model object and
         # copies it into the hash, then returns the hash itself
-        code = ["def collect()", "super", "hash = self.hash"]
+        code = ["def collect()", "super"]
         @attributes.each do |a|
-          code << "hash[:#{a}] = @object.send(:#{a})"
+          code << "@hash[:#{a}] = @object.send(:#{a})"
         end
-        code << "hash"
+        code << "@hash"
         code << "end"
         class_eval(code.join("\n"))
 
