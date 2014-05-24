@@ -27,14 +27,13 @@ module ApiView
         # copies it into the hash, then returns the hash itself
         # e.g.,
         # def collect_attributes
-        #   super
-        #   self[:foo] = @object.send(:foo)
+        #   self.store(:foo, @object.foo)
         #   ...
         #   self
         # end
         code = ["def collect_attributes()"]
         @attributes.each do |a|
-          code << "self.store(:#{a}, @object.send(:#{a}))"
+          code << "self.store(:#{a}, @object.#{a})"
         end
         code << "self"
         code << "end"
