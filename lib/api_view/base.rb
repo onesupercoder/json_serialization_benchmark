@@ -16,6 +16,13 @@ module ApiView
 
         # create a method which reads each attribute from the model object and
         # copies it into the hash, then returns the hash itself
+        # e.g.,
+        # def collect
+        #   super
+        #   @hash[:foo] = @object.send(:foo)
+        #   ...
+        #   @hash
+        # end
         code = ["def collect()", "super"]
         @attributes.each do |a|
           code << "@hash[:#{a}] = @object.send(:#{a})"
@@ -43,23 +50,6 @@ module ApiView
 
     def convert
       collect()
-    end
-
-    def attrs(obj, *attrs)
-      return {} if attrs.empty?
-      if attrs.size == 1 and attrs.first == :all then
-        return obj.serializable_hash
-      end
-
-      ret = {}
-      attrs.each do |a|
-        ret[a] = obj.send(a)
-      end
-      return ret
-    end
-
-    def attrs_except(obj, *attrs)
-      return obj.serializable_hash({ :except => attrs })
     end
 
     def render(obj, options)
