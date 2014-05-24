@@ -8,7 +8,7 @@ class BasketballBoxScoreApiView < BoxScoreApiView
     hash = super
     hash[:attendance] = box_score.attendance,
     hash[:referees] = box_score.referees,
-    hash[:last_play] = render(box_score.last_play, :use => BasketballPlayByPlayRecordApiView)
+    hash[:last_play] = BasketballPlayByPlayRecordApiView.convert(box_score.last_play)
     hash
   end
 

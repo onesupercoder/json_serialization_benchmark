@@ -9,7 +9,7 @@ class EventApiView < EventSummaryApiView
     hash = super
     hash[:share_url] = event.share_url
     hash[:sport_name] = event.sport_name
-    hash[:box_score] = render(event.box_score, :use => BasketballBoxScoreApiView)
+    hash[:box_score] = BasketballBoxScoreApiView.convert(event.box_score)
     hash
   end
 
