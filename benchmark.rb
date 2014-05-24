@@ -12,7 +12,7 @@ require 'presenters/team_presenter'
 require 'presenters/basketball/event_presenter'
 
 require 'oj'
-# Oj.mimic_JSON() # this will speedup benchmarks using #to_json
+Oj.mimic_JSON() # this will speedup benchmarks using #to_json
 require 'find'
 require 'api_view/api_view'
 
