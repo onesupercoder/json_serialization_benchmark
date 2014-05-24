@@ -4,12 +4,12 @@ require "api_view/views/event_summary"
 class EventApiView < EventSummaryApiView
 
   for_model ::Event
+  attributes :share_url, :sport_name
+  alias_method :event, :object
 
-  def self.convert(event)
+  def convert
     hash = super
-    hash[:share_url] = event.share_url
-    hash[:sport_name] = event.sport_name
-    hash[:box_score] = BasketballBoxScoreApiView.convert(event.box_score)
+    hash[:box_score] = BasketballBoxScoreApiView.new(event.box_score).convert
     hash
   end
 

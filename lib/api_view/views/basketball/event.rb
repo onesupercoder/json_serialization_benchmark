@@ -3,11 +3,11 @@ require "api_view/views/event"
 
 class BasketballEventApiView < EventApiView
 
-  def self.convert(event)
-    hash = super
-    hash[:important] = event.important
-    hash[:location]  = event.location
+  attributes :important, :location
+  alias_method :event, :object
 
+  def convert
+    hash = super
     if event.ncaa? then
       hash[:away_ranking] = event.away_ranking
       hash[:away_region]  = event.away_region
