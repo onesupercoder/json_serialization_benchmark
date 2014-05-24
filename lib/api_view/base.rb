@@ -35,7 +35,6 @@ module ApiView
         @attributes.each do |a|
           code << "self.store(:#{a}, @object.#{a})"
         end
-        code << "self"
         code << "end"
         class_eval(code.join("\n"))
 
@@ -53,11 +52,12 @@ module ApiView
     end
 
     def collect_attributes
-      self # no-op by default
+      # no-op by default
     end
 
     def convert
       collect_attributes()
+      self
     end
 
     def render(obj, options)
