@@ -9,10 +9,19 @@ module ApiView
         ApiView.add_model(model, self)
       end
 
+      def parent_attributes
+        parent = self.superclass
+        return [] if parent.name == "ApiView::Base"
+        return parent.instance_variable_get(:@attributes)
+      end
+
       def attributes(*attrs)
 
         @attributes ||= []
-        @attributes = (@attributes + attrs).flatten.sort.uniq
+        @attributes = (@attributes + attrs).flatten
+        parent_attributes.reverse.each do |a|
+          @attributes.unshift(a) if not @attributes.include? a
+        end
 
         # create a method which reads each attribute from the model object and
         # copies it into the hash, then returns the hash itself
@@ -23,11 +32,11 @@ module ApiView
         #   ...
         #   self
         # end
-        code = ["def collect_attributes()", "super"]
+        code = ["def collect_attributes()"]
         @attributes.each do |a|
-          code << "self.store :#{a}, @object.send(:#{a})"
+          code << "self.store(:#{a}, @object.send(:#{a}))"
         end
-        # code << "self"
+        code << "self"
         code << "end"
         class_eval(code.join("\n"))
 
@@ -45,7 +54,7 @@ module ApiView
     end
 
     def collect_attributes
-      # self # no-op by default
+      self # no-op by default
     end
 
     def convert
