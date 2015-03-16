@@ -16,3 +16,4 @@ gem 'oj'
 # Measurement
 gem 'ruby-prof'
 gem 'bixby-bench'
+gem 'benchmark-ips'

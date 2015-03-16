@@ -22,6 +22,7 @@ GEM
       thread_safe (~> 0.1)
       tzinfo (~> 1.1)
     allocation_stats (0.1.5)
+    benchmark-ips (2.1.1)
     bixby-bench (0.1.0)
       allocation_stats
     builder (3.2.2)
@@ -52,6 +53,7 @@ DEPENDENCIES
   actionview
   active_model_serializers
   activesupport
+  benchmark-ips
   bixby-bench
   jbuilder
   multi_json
