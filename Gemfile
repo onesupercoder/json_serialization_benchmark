@@ -15,5 +15,11 @@ gem 'oj'
 
 # Measurement
 gem 'ruby-prof'
-gem 'bixby-bench'
 gem 'benchmark-ips'
+gem 'allocation_stats'
+
+# CLI formatting
+gem 'terminal-table'
+
+# Debugging
+gem 'pry'

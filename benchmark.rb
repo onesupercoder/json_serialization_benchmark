@@ -1,8 +1,8 @@
 $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), 'lib')))
 
-require 'bixby/bench'
 require 'benchmark/ips'
 require 'json_serialization_benchmark'
+require 'terminal-table'
 
 require 'serializers/event_summary_serializer'
 require 'serializers/team_serializer'
@@ -34,323 +34,196 @@ module SerializationBenchmark
   # MEMBER TESTS
   puts "\n\nMember tests:\n\n"
 
-  Bixby::Bench.run(10_000) do |b|
-
-    # ULTRA SIMPLE
-    b.sample("RABL #{Rabl::VERSION} Ultra Simple: Member") do
-      Rabl.render(team, 'teams/item', view_path: rabl_view_path, format: :json)
+  class Benchmark::Suite
+    def self.current
+      self.new
     end
 
-    b.sample("AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Member") do
-      JsonEncoder.dump(TeamSerializer.new(team).to_json)
+    def quiet?
+      false # bug in 2.1.1 of Benchmark::IPS
     end
 
-    b.sample("Presenters Ultra Simple: Member") do
-      JsonEncoder.dump(TeamPresenter.new(team).to_json)
-    end
-
-    b.sample("ApiView Ultra Simple: Member") do
-      ApiView::Engine.render(team, nil, :format => "json")
-    end
-
-    b.sample("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Member") do
-      Jbuilder.render('teams/show', locals: { team: team }, layout: false, format: :json)
-    end
-
-
-    # SIMPLE
-    b.divider
-
-    b.report("RABL #{Rabl::VERSION} Simple: Member") do
-      Rabl.render(event, 'events/item', view_path: rabl_view_path, format: :json)
-    end
-
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Simple: Member") do
-      JsonEncoder.dump(EventSummarySerializer.new(event).to_json)
-    end
-
-    b.report("Presenters Simple: Member") do
-      JsonEncoder.dump(EventSummaryPresenter.new(event).to_json)
-    end
-
-    b.report("ApiView Simple: Member") do
-      ApiView::Engine.render(event, nil, :format => "json", :use => EventSummaryApiView)
-    end
-
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Simple: Member") do
-      Jbuilder.render('events/show', locals: { event: event }, layout: false, format: :json)
-    end
-
-
-    # COMPLEX
-    b.divider
-
-    b.report("RABL #{Rabl::VERSION} Complex: Member") do
-      Rabl.render(event, 'basketball/events/show', view_path: rabl_view_path, format: :json)
-    end
-
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Complex: Member") do
-      JsonEncoder.dump(Basketball::EventSerializer.new(event).to_json)
-    end
-
-    b.report("Presenters Complex: Member") do
-      JsonEncoder.dump(Basketball::EventPresenter.new(event).to_json)
-    end
-
-    b.report("ApiView Complex: Member") do
-      ApiView::Engine.render(event, nil, :format => "json", :use => BasketballEventApiView)
-    end
-
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Complex: Member") do
-      Jbuilder.render('basketball/events/show', locals: { event: event }, layout: false, format: :json)
-    end
+    def warming(label, sec); end
+    def warmup_stats(time, cycles); end
+    def running(label, sec); end
+    def add_report(rep, location); end
+    def display; end
   end
 
+  module Benchie
+    def self.measure
+      job = nil
+      report = Benchmark.ips do |benchmark|
+        yield(benchmark)
+        job = benchmark
+      end
 
-  # COLLECTION TESTS
-  puts "\n\nCollection tests:\n\n"
+      # collect allocation data, needs ruby >= 2.1
+      items_allocations = job.list.each_with_object({}) do |item, hash|
+        hash[item.label] = AllocationStats.new(burn: 5).trace { item.action.call }
+      end
 
-  Bixby::Bench.run(100) do |b|
+      warmups = job.timing.each_with_object({}) { |kv, h| h[kv.first.label] = kv.last }
+      entries = report.entries.sort_by(&:ips)
+      rows = entries.map do |e|
+        [
+          e.label,
+          Benchmark::IPS::Helpers.scale(warmups[e.label]),
+          Benchmark::IPS::Helpers.scale(e.ips),
+          "±%4.1f%%" % (100.0 * e.ips_sd.to_f / e.ips),
+          Benchmark::IPS::Helpers.scale(e.iterations),
+          e != entries.last ? "%.2fx slower" % (entries.last.ips.to_f / e.ips) : '', # blank out the fastest comparison, guaranteed to be 1x
+          items_allocations[e.label].allocations.all.size,
+          items_allocations[e.label].allocations.bytes.to_a.inject(&:+)
+        ]
+      end
 
-    # ULTRA SIMPLE
-    b.report("RABL #{Rabl::VERSION} Ultra Simple: Collection") do
-      Rabl.render(team_collection, 'teams/index', view_path: rabl_view_path, format: :json)
-    end
-
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Collection") do
-      result = ActiveModel::ArraySerializer.
-        new(team_collection, each_serializer: TeamSerializer).
-        as_json
-
-      JsonEncoder.dump(result)
-    end
-
-    b.report("Presenters Ultra Simple: Collection") do
-      result = team_collection.map { |team| TeamPresenter.new(team).as_json }
-      JsonEncoder.dump(result)
-    end
-
-    b.report("ApiView Ultra Simple: Collection") do
-      ApiView::Engine.render(team_collection, nil, :format => "json")
-    end
-
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
-      Jbuilder.render('teams/index', locals: { teams: team_collection }, layout: false, format: :json)
-    end
-
-
-    # SIMPLE
-    b.divider
-
-    b.report("RABL #{Rabl::VERSION} Simple: Collection") do
-      Rabl.render(event_collection, 'events/index', view_path: rabl_view_path, format: :json)
-    end
-
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Simple: Collection") do
-      result = ActiveModel::ArraySerializer.
-        new(event_collection, each_serializer: EventSummarySerializer).
-        as_json
-
-      JsonEncoder.dump(result)
-    end
-
-    b.report("Presenters Simple: Collection") do
-      result = event_collection.map { |event| EventSummaryPresenter.new(event).as_json }
-      JsonEncoder.dump(result)
-    end
-
-    b.report("ApiView Simple: Collection") do
-      ApiView::Engine.render(event_collection, nil, :format => "json", :use => EventSummaryApiView)
-    end
-
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
-      Jbuilder.render('events/index', locals: { events: event_collection }, layout: false, format: :json)
-    end
-
-
-    # COMPLEX
-    b.divider
-
-    b.report("RABL #{Rabl::VERSION} Complex: Collection") do
-      Rabl.render(event_collection, 'basketball/events/index', view_path: rabl_view_path, format: :json)
-    end
-
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Complex: Collection") do
-      result = ActiveModel::ArraySerializer.
-        new(event_collection, each_serializer: Basketball::EventSerializer).
-        as_json
-
-      JsonEncoder.dump(result)
-    end
-
-    b.report("Presenters Complex: Collection") do
-      result = event_collection.map { |event| Basketball::EventPresenter.new(event).as_json }
-      JsonEncoder.dump(result)
-    end
-
-    b.report("ApiView Complex: Collection") do
-      ApiView::Engine.render(event_collection, nil, :format => "json", :use => BasketballEventApiView)
-    end
-
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
-      Jbuilder.render('basketball/events/index', locals: { events: event_collection }, layout: false, format: :json)
+      headings = ['', 'Warmups (i/100ms)', 'Iterations (i/s)', 'Iterations (std dev %)', 'Total Iterations', 'Comparison', 'Allocations', 'Memsize']
+      puts Terminal::Table.new(headings: headings, rows: rows, style: { border_y: ' ', border_i: ' ', border_x: '' })
     end
   end
-
-  # MEMBER TESTS
-  puts "\n\nMember tests:\n\n"
 
   # ULTRA SIMPLE
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Ultra Simple: Member") do
+  Benchie.measure do |b|
+    b.config(time: 10, warmup: 2)
+
+    #TODO labels must be unique
+    b.report('%-36.36s' % "RABL #{Rabl::VERSION} Ultra Simple: Member") do
       Rabl.render(team, 'teams/item', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Member") do
+    b.report('%-36.36s' % "AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Member") do
       TeamSerializer.new(team).to_json
     end
 
-    b.report("Presenters Ultra Simple: Member") do
+    b.report('%-36.36s' % "Presenters Ultra Simple: Member") do
       TeamPresenter.new(team).to_json
     end
 
-    b.report("ApiView Ultra Simple: Member") do
+    b.report('%-36.36s' % "ApiView Ultra Simple: Member") do
       ApiView::Engine.render(team, nil, :format => "json")
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Member") do
+    b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Member") do
       Jbuilder.render('teams/show', locals: { team: team }, layout: false, format: :json)
     end
-
-    b.compare!
   end
 
   # SIMPLE
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Simple: Member") do
+  Benchie.measure do |b|
+    b.report('%-36.36s' % "RABL #{Rabl::VERSION} Simple: Member") do
       Rabl.render(event, 'events/item', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Simple: Member") do
+    b.report('%-36.36s' % "AMS #{ActiveModel::Serializer::VERSION} Simple: Member") do
       EventSummarySerializer.new(event).to_json
     end
 
-    b.report("Presenters Simple: Member") do
+    b.report('%-36.36s' % "Presenters Simple: Member") do
       EventSummaryPresenter.new(event).to_json
     end
 
-    b.report("ApiView Simple: Member") do
+    b.report('%-36.36s' % "ApiView Simple: Member") do
       ApiView::Engine.render(event, nil, :format => "json", :use => EventSummaryApiView)
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Simple: Member") do
+    b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Simple: Member") do
       Jbuilder.render('events/show', locals: { event: event }, layout: false, format: :json)
     end
-
-    b.compare!
   end
 
   # COMPLEX
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Complex: Member") do
+  Benchie.measure do |b|
+    b.report('%-36.36s' % "RABL #{Rabl::VERSION} Complex: Member") do
       Rabl.render(event, 'basketball/events/show', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Complex: Member") do
+    b.report('%-36.36s' % "AMS #{ActiveModel::Serializer::VERSION} Complex: Member") do
       Basketball::EventSerializer.new(event).to_json
     end
 
-    b.report("Presenters Complex: Member") do
+    b.report('%-36.36s' % "Presenters Complex: Member") do
       Basketball::EventPresenter.new(event).to_json
     end
 
-    b.report("ApiView Complex: Member") do
+    b.report('%-36.36s' % "ApiView Complex: Member") do
       ApiView::Engine.render(event, nil, :format => "json", :use => BasketballEventApiView)
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Complex: Member") do
+    b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Complex: Member") do
       Jbuilder.render('basketball/events/show', locals: { event: event }, layout: false, format: :json)
     end
-
-    b.compare!
   end
 
   # COLLECTION TESTS
   puts "\n\nCollection tests:\n\n"
 
   # ULTRA SIMPLE
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Ultra Simple: Collection") do
+  Benchie.measure do |b|
+    b.report('%-40.40s' % "RABL #{Rabl::VERSION} Ultra Simple: Collection") do
       Rabl.render(team_collection, 'teams/index', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Collection") do
+    b.report('%-40.40s' % "AMS #{ActiveModel::Serializer::VERSION} Ultra Simple: Collection") do
       ActiveModel::ArraySerializer.new(team_collection, each_serializer: TeamSerializer).to_json
     end
 
-    b.report("Presenters Ultra Simple: Collection") do
+    b.report('%-40.40s' % "Presenters Ultra Simple: Collection") do
       team_collection.map { |team| TeamPresenter.new(team).as_json }.to_json
     end
 
-    b.report("ApiView Ultra Simple: Collection") do
+    b.report('%-40.40s' % "ApiView Ultra Simple: Collection") do
       ApiView::Engine.render(team_collection, nil, :format => "json")
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
+    b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
       Jbuilder.render('teams/index', locals: { teams: team_collection }, layout: false, format: :json)
     end
-
-    b.compare!
   end
 
   # SIMPLE
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Simple: Collection") do
+  Benchie.measure do |b|
+    b.report('%-40.40s' % "RABL #{Rabl::VERSION} Simple: Collection") do
       Rabl.render(event_collection, 'events/index', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Simple: Collection") do
+    b.report('%-40.40s' % "AMS #{ActiveModel::Serializer::VERSION} Simple: Collection") do
       ActiveModel::ArraySerializer.new(event_collection, each_serializer: EventSummarySerializer).to_json
     end
 
-    b.report("Presenters Simple: Collection") do
+    b.report('%-40.40s' % "Presenters Simple: Collection") do
       event_collection.map { |event| EventSummaryPresenter.new(event).as_json }.to_json
     end
 
-    b.report("ApiView Simple: Collection") do
+    b.report('%-40.40s' % "ApiView Simple: Collection") do
       ApiView::Engine.render(event_collection, nil, :format => "json", :use => EventSummaryApiView)
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
+    b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Simple: Collection") do
       Jbuilder.render('events/index', locals: { events: event_collection }, layout: false, format: :json)
     end
-
-    b.compare!
   end
 
   # COMPLEX
-  Benchmark.ips do |b|
-    b.report("RABL #{Rabl::VERSION} Complex: Collection") do
+  Benchie.measure do |b|
+    b.report('%-40.40s' % "RABL #{Rabl::VERSION} Complex: Collection") do
       Rabl.render(event_collection, 'basketball/events/index', view_path: rabl_view_path, format: :json)
     end
 
-    b.report("AMS #{ActiveModel::Serializer::VERSION} Complex: Collection") do
+    b.report('%-40.40s' % "AMS #{ActiveModel::Serializer::VERSION} Complex: Collection") do
       ActiveModel::ArraySerializer.new(event_collection, each_serializer: Basketball::EventSerializer).to_json
     end
 
-    b.report("Presenters Complex: Collection") do
+    b.report('%-40.40s' % "Presenters Complex: Collection") do
       event_collection.map { |event| Basketball::EventPresenter.new(event).as_json }.to_json
     end
 
-    b.report("ApiView Complex: Collection") do
+    b.report('%-40.40s' % "ApiView Complex: Collection") do
       ApiView::Engine.render(event_collection, nil, :format => "json", :use => BasketballEventApiView)
     end
 
-    b.report("Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Ultra Simple: Collection") do
+    b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s} Complex: Collection") do
       Jbuilder.render('basketball/events/index', locals: { events: event_collection }, layout: false, format: :json)
     end
-
-    b.compare!
   end
-
 end
