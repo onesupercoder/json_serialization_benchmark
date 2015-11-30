@@ -132,6 +132,10 @@ module SerializationBenchmark
     b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('teams/show', locals: { team: team }, layout: false, format: :json)
     end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      TeamMapping.representation_for(:read, team)
+    end
   end
 
   # SIMPLE
@@ -157,6 +161,10 @@ module SerializationBenchmark
     b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('events/show', locals: { event: event }, layout: false, format: :json)
     end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      EventMapping.representation_for(:summary, event)
+    end
   end
 
   # COMPLEX
@@ -181,6 +189,10 @@ module SerializationBenchmark
 
     b.report('%-36.36s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('basketball/events/show', locals: { event: event }, layout: false, format: :json)
+    end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      EventMapping.representation_for(:ncaa, event)
     end
   end
 
@@ -210,6 +222,10 @@ module SerializationBenchmark
     b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('teams/index', locals: { teams: team_collection }, layout: false, format: :json)
     end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      TeamMapping.represent_collection_for(:read, team_collection)
+    end
   end
 
   # SIMPLE
@@ -235,6 +251,10 @@ module SerializationBenchmark
     b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('events/index', locals: { events: event_collection }, layout: false, format: :json)
     end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      EventMapping.represent_collection_for(:summary, event_collection)
+    end
   end
 
   # COMPLEX
@@ -259,6 +279,10 @@ module SerializationBenchmark
 
     b.report('%-40.40s' % "Jbuilder #{Gem.loaded_specs['jbuilder'].version.to_s}") do
       Jbuilder.render('basketball/events/index', locals: { events: event_collection }, layout: false, format: :json)
+    end
+
+    b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
+      EventMapping.represent_collection_for(:basketball, event_collection)
     end
   end
 
