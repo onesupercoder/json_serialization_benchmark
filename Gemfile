@@ -6,6 +6,7 @@ gem 'rabl'
 gem 'active_model_serializers'
 gem 'jbuilder'
 gem 'kartograph'
+gem 'pliny'
 # Rail's gems to render jbuilder templates
 gem 'actionpack'
 gem 'actionview'

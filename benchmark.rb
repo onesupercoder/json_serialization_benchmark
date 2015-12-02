@@ -108,6 +108,15 @@ module SerializationBenchmark
   # MEMBER TESTS
   Benchie.print_section_separator("Member tests")
 
+  # puts TeamSerializer.new(team).to_json
+  # puts Sports::Serializers::Team.new(:default).serialize(team).to_json
+  # puts
+  # puts EventSummarySerializer.new(event).to_json
+  # puts Sports::Serializers::Event.new(:summary).serialize(event).to_json
+  # puts
+  # puts Basketball::EventSerializer.new(event).to_json
+  # puts Sports::Serializers::Event.new(:basketball).serialize(event).to_json
+
   # ULTRA SIMPLE
   Benchie.measure("Ultra Simple: Member") do |b|
     b.config(time: 10, warmup: 2)
@@ -136,9 +145,13 @@ module SerializationBenchmark
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       TeamMapping.representation_for(:read, team)
     end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Team.new(:default).serialize(team).to_json
+    end
   end
 
-  # SIMPLE
+  # # SIMPLE
   Benchie.measure("Simple: Member") do |b|
     b.config(time: 10, warmup: 2)
 
@@ -164,6 +177,10 @@ module SerializationBenchmark
 
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       EventMapping.representation_for(:summary, event)
+    end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Event.new(:summary).serialize(event).to_json
     end
   end
 
@@ -193,6 +210,10 @@ module SerializationBenchmark
 
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       EventMapping.representation_for(:ncaa, event)
+    end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Event.new(:basketball).serialize(event).to_json
     end
   end
 
@@ -226,6 +247,10 @@ module SerializationBenchmark
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       TeamMapping.represent_collection_for(:read, team_collection)
     end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Team.new(:default).serialize(team_collection).to_json
+    end
   end
 
   # SIMPLE
@@ -255,6 +280,10 @@ module SerializationBenchmark
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       EventMapping.represent_collection_for(:summary, event_collection)
     end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Event.new(:summary).serialize(event_collection).to_json
+    end
   end
 
   # COMPLEX
@@ -283,6 +312,10 @@ module SerializationBenchmark
 
     b.report('%-36.36s' % "Kartograph #{Gem.loaded_specs['kartograph'].version.to_s}") do
       EventMapping.represent_collection_for(:basketball, event_collection)
+    end
+
+    b.report('%-36.36s' % "Pliny #{Pliny::VERSION}") do
+      Sports::Serializers::Event.new(:basketball).serialize(event_collection).to_json
     end
   end
 
